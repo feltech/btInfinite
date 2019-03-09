@@ -21,16 +21,16 @@ void btInfCollisionDispatcher::defaultNearCallback(
 	if (dispatcher.needsCollision(colObj0,colObj1))
 	{
 		btVector3 refTile;
-		if (colObj0->m_refTile != btInfRigidBody::NO_REF) {
-			refTile = colObj0->m_refTile;
-			colObj1->m_refTile = refTile;
-		} else if (colObj1->m_refTile != btInfRigidBody::NO_REF) {
-			refTile = colObj1->m_refTile;
-			colObj0->m_refTile = refTile;
+		if (colObj0->m_refTileCoord != btInfRigidBody::NO_REF) {
+			refTile = colObj0->m_refTileCoord;
+			colObj1->m_refTileCoord = refTile;
+		} else if (colObj1->m_refTileCoord != btInfRigidBody::NO_REF) {
+			refTile = colObj1->m_refTileCoord;
+			colObj0->m_refTileCoord = refTile;
 		} else {
 			refTile = colObj0->m_tileCoord;
-			colObj0->m_refTile = refTile;
-			colObj1->m_refTile = refTile;
+			colObj0->m_refTileCoord = refTile;
+			colObj1->m_refTileCoord = refTile;
 		}
 		const btScalar tileSize = static_cast<btInfCollisionDispatcher&>(dispatcher).m_tileSize;
 		const btVector3 tileDelta0 = tileSize * (colObj0->m_tileCoord - refTile);

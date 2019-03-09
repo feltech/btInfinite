@@ -3,6 +3,8 @@
 
 #include "catch.hpp"
 #include <btBulletDynamicsCommon.h>
+
+#include "btInfTypes.h"
 #include "btInfCollisionDispatcher.h"
 #include "btInfRigidBody.h"
 #include "btInfBroadphase.h"
@@ -12,11 +14,20 @@ std::ostream& operator <<( std::ostream& os, const btVector3& p ) {
 	os << "(" << p.x() << ", " << p.y() << ", " << p.z() << ")";
 	return os;
 }
+template <class T, typename Fn>
+auto transform(const T& in, Fn&& fn)// -> typename std::vector<decltype(fn(in[0]))>
+{
+	typename std::vector<decltype(fn(in[0]))> out(in.size());
+	std::transform(in.begin(), in.end(), out.begin(), fn);
+	return out;
+};
 
 SCENARIO("Sphere-sphere collision")
 {
 	const btScalar tile_size = 10;
-	auto broadphase = std::make_unique<btInfBroadphase>(tile_size);
+	const btInf::TileIdx grid_size = 10;
+	btInf::TileList tiles{grid_size};
+	auto broadphase = std::make_unique<btInfBroadphase>(tile_size, tiles);
 	auto collision_config = std::make_unique<btDefaultCollisionConfiguration>();
 	auto dispatcher = std::make_unique<btInfCollisionDispatcher>(collision_config.get(), tile_size);
 	auto solver = std::make_unique<btSequentialImpulseConstraintSolver>();
@@ -90,6 +101,14 @@ SCENARIO("Sphere-sphere collision")
 
 		sphere1_body = create_sphere(btVector3{1,2,3}, btVector3{2, 2, 0});
 		sphere2_body = create_sphere(btVector3{1,2,3}, btVector3{-2, -2, 0});
+
+		THEN("they are both members of the tile")
+		{
+			auto sizes = transform(tiles, [](const auto& tile){ return tile.size(); });
+
+			CHECK(sizes == decltype(sizes){0, 0, 0, 0, 0, 0, 0, 0, 2, 0});
+			CHECK(tiles[8] == btInf::TileMemberList{sphere1_body.get(), sphere2_body.get()});
+		}
 
 		WHEN("spheres are sent flying toward one-another")
 		{
@@ -245,10 +264,10 @@ SCENARIO("Sphere-sphere collision")
 
 			THEN("they've chosen a suitable reference tile for collision calculations")
 			{
-				CHECK(sphere11_body->m_refTile == btVector3(-2, 0, 0));
-				CHECK(sphere12_body->m_refTile == btVector3(-2, 0, 0));
-				CHECK(sphere21_body->m_refTile == btVector3(2, 0, 0));
-				CHECK(sphere22_body->m_refTile == btVector3(2, 0, 0));
+				CHECK(sphere11_body->m_refTileCoord == btVector3(-2, 0, 0));
+				CHECK(sphere12_body->m_refTileCoord == btVector3(-2, 0, 0));
+				CHECK(sphere21_body->m_refTileCoord == btVector3(2, 0, 0));
+				CHECK(sphere22_body->m_refTileCoord == btVector3(2, 0, 0));
 			}
 			THEN("they have expected velocities")
 			{
@@ -256,6 +275,14 @@ SCENARIO("Sphere-sphere collision")
 				CHECK(sphere12_body->getLinearVelocity().x() == Approx(1).margin(0.1));
 				CHECK(sphere21_body->getLinearVelocity().x() == Approx(0).margin(0.1));
 				CHECK(sphere22_body->getLinearVelocity().x() == Approx(-1).margin(0.1));
+			}
+			THEN("they are members of tiles")
+			{
+				auto sizes = transform(tiles, [](const auto& tile){ return tile.size(); });
+
+				CHECK(sizes == decltype(sizes){2, 0, 0, 0, 0, 0, 2, 0, 0, 0});
+				CHECK(tiles[0] == btInf::TileMemberList{sphere11_body.get(), sphere12_body.get()});
+				CHECK(tiles[6] == btInf::TileMemberList{sphere21_body.get(), sphere22_body.get()});
 			}
 		}
 
@@ -310,14 +337,31 @@ SCENARIO("Sphere-sphere collision")
 			}
 			THEN("tile coords have been updated")
 			{
+				CHECK(sphere11_body->m_tileCoord == btVector3(-2, 0, 0));
+				CHECK(sphere21_body->m_tileCoord == btVector3(2, 0, 0));
 				CHECK(sphere12_body->m_tileCoord == btVector3(0, 0, 0));
 				CHECK(sphere22_body->m_tileCoord == btVector3(0, 0, 0));
 			}
 			THEN("chosen reference tile is between the two")
 			{
-				CHECK(sphere12_body->m_refTile == btVector3(0, 0, 0));
-				CHECK(sphere22_body->m_refTile == btVector3(0, 0, 0));
+				CHECK(sphere11_body->m_refTileCoord == btInfRigidBody::NO_REF);
+				CHECK(sphere21_body->m_refTileCoord == btInfRigidBody::NO_REF);
+				CHECK(sphere12_body->m_refTileCoord == btVector3(0, 0, 0));
+				CHECK(sphere22_body->m_refTileCoord == btVector3(0, 0, 0));
 			}
+			THEN("tile membership has been updated")
+			{
+				auto sizes = transform(tiles, [](const auto& tile){ return tile.size(); });
+
+				CHECK(sizes == decltype(sizes){3, 0, 0, 0, 0, 0, 1, 0, 0, 0});
+
+				CHECK(
+					tiles[0] == btInf::TileMemberList{
+						sphere11_body.get(), sphere12_body.get(), sphere22_body.get()
+					}
+				);
+onions				CHECK(tiles[6] == btInf::TileMemberList{sphere21_body.get()});
+	}
 		}
 	}
 }

@@ -3,7 +3,7 @@
 
 btInfRigidBody::btInfRigidBody(
 	const btRigidBodyConstructionInfo& constructionInfo, const btVector3& tileCoord
-) : btRigidBody{constructionInfo}, m_tileCoord{tileCoord}, m_refTile{btInfRigidBody::NO_REF}
+) : btRigidBody{constructionInfo}, m_tileCoord{tileCoord}, m_refTileCoord{btInfRigidBody::NO_REF}
 {}
 
 const btVector3 btInfRigidBody::NO_REF{

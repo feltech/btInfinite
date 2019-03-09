@@ -3,13 +3,16 @@
 #include <LinearMath/btVector3.h>
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 
+#include "btInfTypes.h"
+
 class btInfRigidBody : public btRigidBody
 {
 public:
-	btVector3	m_tileCoord;
-	btVector3	m_refTile;
+	btInf::TileCoord	m_tileCoord;
+	btInf::TileCoord	m_refTileCoord;
+	btInf::TileMemberIdx	m_idxTileMember;
+
 	static const btVector3 NO_REF;
-	static constexpr float TILE_SIZE = 10000.0f;
 
 public:
 

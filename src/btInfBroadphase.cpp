@@ -2,13 +2,31 @@
 #include <set>
 #include <vector>
 
-
 #include "btInfBroadphase.h"
 #include "btInfRigidBody.h"
 
-btInfBroadphase::btInfBroadphase(const btScalar tileSize)
-: btSimpleBroadphase{}, m_tileSize{tileSize}
+
+btInfBroadphase::btInfBroadphase(const btInf::TileSize tileSize, btInf::TileList& tiles)
+: btSimpleBroadphase{}, m_tileSize{tileSize}, m_tiles{tiles}
 {}
+
+
+btBroadphaseProxy*	btInfBroadphase::createProxy(
+	const btVector3& aabbMin, const btVector3& aabbMax, int shapeType, void* userPtr,
+	int collisionFilterGroup, int collisionFilterMask, btDispatcher* dispatcher
+) {
+	btInfRigidBody* body = static_cast<btInfRigidBody*>(userPtr);
+
+	btInf::TileIdx tileIdx = this->tileHash(body->m_tileCoord);
+	btInf::TileMemberList& tile = m_tiles[tileIdx];
+	tile.push_back(body);
+	body->m_idxTileMember = tile.size() - 1;
+
+	return btSimpleBroadphase::createProxy(
+		aabbMin, aabbMax, shapeType, userPtr, collisionFilterGroup, collisionFilterMask, dispatcher
+	);
+}
+
 
 void btInfBroadphase::calculateOverlappingPairs(btDispatcher* dispatcher)
 {
@@ -63,7 +81,7 @@ void btInfBroadphase::calculateOverlappingPairs(btDispatcher* dispatcher)
 			if (overlapping.count(body))
 				continue;
 
-			body->m_refTile = btInfRigidBody::NO_REF;
+			body->m_refTileCoord = btInfRigidBody::NO_REF;
 			const btVector3& origin = body->getWorldTransform().getOrigin();
 
 			const btScalar tileRadius = m_tileSize / 2;
@@ -75,8 +93,20 @@ void btInfBroadphase::calculateOverlappingPairs(btDispatcher* dispatcher)
 			static const btVector3 zero{0, 0, 0};
 			if (tileDelta != zero)
 			{
-				body->m_tileCoord += tileDelta;
+				// Update world centre to be on new tile.
 				body->getWorldTransform().setOrigin(origin - tileDelta * m_tileSize);
+				// Remove from previous tile.
+				btInf::TileIdx prevTileIdx = this->tileHash(body->m_tileCoord);
+				btInf::TileMemberList& prevTile = m_tiles[prevTileIdx];
+				std::swap(prevTile[body->m_idxTileMember], prevTile[prevTile.size() - 1]);
+				prevTile[body->m_idxTileMember]->m_idxTileMember = body->m_idxTileMember;
+				prevTile.pop_back();
+				// Add to new tile
+				body->m_tileCoord += tileDelta;
+				btInf::TileIdx newTileIdx = this->tileHash(body->m_tileCoord);
+				btInf::TileMemberList& newTile = m_tiles[newTileIdx];
+				newTile.push_back(body);
+				body->m_idxTileMember = newTile.size() - 1;
 			}
 
 		}
@@ -163,6 +193,7 @@ bool btInfBroadphase::testAabbOverlap(btBroadphaseProxy* proxy0,btBroadphaseProx
 	return aabbOverlap(p0, p1);
 }
 
+
 bool btInfBroadphase::aabbOverlap(
 	btSimpleBroadphaseProxy* proxy0, btSimpleBroadphaseProxy* proxy1
 ) {
@@ -182,3 +213,18 @@ bool btInfBroadphase::aabbOverlap(
 
 }
 
+
+btInf::TileIdx btInfBroadphase::tileHash(const btVector3& tileCoord) {
+	// Modified from https://wickedengine.net/2018/05/21/scalabe-gpu-fluid-simulation/
+	static const btInf::TileIdx p1 = 73856093; // some large primes
+	static const btInf::TileIdx p2 = 19349663;
+	static const btInf::TileIdx p3 = 83492791;
+	// Note the cast to (unsigned) `TileIdx` will make negative values very large.
+	btInf::TileIdx n{
+		(p1 * btInf::TileIdx(tileCoord.x())) ^
+		(p2 * btInf::TileIdx(tileCoord.y())) ^
+		(p3 * btInf::TileIdx(tileCoord.z()))
+	};
+	n %= m_tiles.size();
+	return n;
+}
