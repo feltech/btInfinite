@@ -24,11 +24,11 @@ void CollisionDispatcher::defaultNearCallback(
 	if (dispatcher.needsCollision(colObj0,colObj1))
 	{
 		btVector3 refTile;
-		if (colObj0->m_refTileCoord != RigidBody::NO_REF) {
-			refTile = colObj0->m_refTileCoord;
+		if (colObj0->m_refTileCoord) {
+			refTile = *colObj0->m_refTileCoord;
 			colObj1->m_refTileCoord = refTile;
-		} else if (colObj1->m_refTileCoord != RigidBody::NO_REF) {
-			refTile = colObj1->m_refTileCoord;
+		} else if (colObj1->m_refTileCoord) {
+			refTile = *colObj1->m_refTileCoord;
 			colObj0->m_refTileCoord = refTile;
 		} else {
 			refTile = colObj0->m_tileCoord;

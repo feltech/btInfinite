@@ -349,8 +349,8 @@ SCENARIO("Sphere-sphere collision")
 			}
 			THEN("chosen reference tile is between the two")
 			{
-				CHECK(sphere11_body->m_refTileCoord == btInf::RigidBody::NO_REF);
-				CHECK(sphere21_body->m_refTileCoord == btInf::RigidBody::NO_REF);
+				CHECK(!sphere11_body->m_refTileCoord.has_value());
+				CHECK(!sphere21_body->m_refTileCoord.has_value());
 				CHECK(sphere12_body->m_refTileCoord == btVector3(0, 0, 0));
 				CHECK(sphere22_body->m_refTileCoord == btVector3(0, 0, 0));
 			}

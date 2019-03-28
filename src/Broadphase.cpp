@@ -83,7 +83,7 @@ void Broadphase::calculateOverlappingPairs(btDispatcher* dispatcher)
 			if (overlapping.count(body))
 				continue;
 
-			body->m_refTileCoord = RigidBody::NO_REF;
+			body->m_refTileCoord.reset();
 			const btVector3& origin = body->getWorldTransform().getOrigin();
 
 			const btScalar tileRadius = m_tileSize / 2;
