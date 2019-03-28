@@ -1,24 +1,26 @@
+#include <btInf/Broadphase.h>
 #include <algorithm>
 #include <set>
 #include <vector>
 
-#include "btInfBroadphase.h"
-#include "btInfRigidBody.h"
+#include "btInf/RigidBody.h"
 
+namespace btInf
+{
 
-btInfBroadphase::btInfBroadphase(const btInf::TileSize tileSize, btInf::TileList& tiles)
+Broadphase::Broadphase(const btInf::TileSize tileSize, btInf::TileList& tiles)
 : btSimpleBroadphase{}, m_tileSize{tileSize}, m_tiles{tiles}
 {}
 
 
-btBroadphaseProxy*	btInfBroadphase::createProxy(
+btBroadphaseProxy*	Broadphase::createProxy(
 	const btVector3& aabbMin, const btVector3& aabbMax, int shapeType, void* userPtr,
 	int collisionFilterGroup, int collisionFilterMask, btDispatcher* dispatcher
 ) {
-	btInfRigidBody* body = static_cast<btInfRigidBody*>(userPtr);
+	RigidBody* body = static_cast<RigidBody*>(userPtr);
 
-	btInf::TileIdx tileIdx = this->tileHash(body->m_tileCoord);
-	btInf::TileMemberList& tile = m_tiles[tileIdx];
+	TileIdx tileIdx = this->tileHash(body->m_tileCoord);
+	TileMemberList& tile = m_tiles[tileIdx];
 	tile.push_back(body);
 	body->m_idxTileMember = tile.size() - 1;
 
@@ -28,7 +30,7 @@ btBroadphaseProxy*	btInfBroadphase::createProxy(
 }
 
 
-void btInfBroadphase::calculateOverlappingPairs(btDispatcher* dispatcher)
+void Broadphase::calculateOverlappingPairs(btDispatcher* dispatcher)
 {
 	//first check for new overlapping pairs
 	int i,j;
@@ -77,11 +79,11 @@ void btInfBroadphase::calculateOverlappingPairs(btDispatcher* dispatcher)
 		for (i = 0; i <= m_LastHandleIndex; i++)
 		{
 			btSimpleBroadphaseProxy& proxy = m_pHandles[i];
-			btInfRigidBody* body = static_cast<btInfRigidBody*>(proxy.m_clientObject);
+			RigidBody* body = static_cast<RigidBody*>(proxy.m_clientObject);
 			if (overlapping.count(body))
 				continue;
 
-			body->m_refTileCoord = btInfRigidBody::NO_REF;
+			body->m_refTileCoord = RigidBody::NO_REF;
 			const btVector3& origin = body->getWorldTransform().getOrigin();
 
 			const btScalar tileRadius = m_tileSize / 2;
@@ -186,7 +188,7 @@ void btInfBroadphase::calculateOverlappingPairs(btDispatcher* dispatcher)
 }
 
 
-bool btInfBroadphase::testAabbOverlap(btBroadphaseProxy* proxy0,btBroadphaseProxy* proxy1)
+bool Broadphase::testAabbOverlap(btBroadphaseProxy* proxy0,btBroadphaseProxy* proxy1)
 {
 	btSimpleBroadphaseProxy* p0 = getSimpleProxyFromProxy(proxy0);
 	btSimpleBroadphaseProxy* p1 = getSimpleProxyFromProxy(proxy1);
@@ -194,11 +196,11 @@ bool btInfBroadphase::testAabbOverlap(btBroadphaseProxy* proxy0,btBroadphaseProx
 }
 
 
-bool btInfBroadphase::aabbOverlap(
+bool Broadphase::aabbOverlap(
 	btSimpleBroadphaseProxy* proxy0, btSimpleBroadphaseProxy* proxy1
 ) {
-	const btVector3& tileCoord0 = static_cast<btInfRigidBody*>(proxy0->m_clientObject)->m_tileCoord;
-	const btVector3& tileCoord1 = static_cast<btInfRigidBody*>(proxy1->m_clientObject)->m_tileCoord;
+	const btVector3& tileCoord0 = static_cast<RigidBody*>(proxy0->m_clientObject)->m_tileCoord;
+	const btVector3& tileCoord1 = static_cast<RigidBody*>(proxy1->m_clientObject)->m_tileCoord;
 
 	const btVector3& tileOffset1 = m_tileSize * (tileCoord1 - tileCoord0);
 	const btVector3& aabbMin1 = proxy1->m_aabbMin + tileOffset1;
@@ -214,7 +216,7 @@ bool btInfBroadphase::aabbOverlap(
 }
 
 
-btInf::TileIdx btInfBroadphase::tileHash(const btVector3& tileCoord) {
+btInf::TileIdx Broadphase::tileHash(const btVector3& tileCoord) {
 	// Modified from https://wickedengine.net/2018/05/21/scalabe-gpu-fluid-simulation/
 	static const btInf::TileIdx p1 = 73856093; // some large primes
 	static const btInf::TileIdx p2 = 19349663;
@@ -227,4 +229,5 @@ btInf::TileIdx btInfBroadphase::tileHash(const btVector3& tileCoord) {
 	};
 	n %= m_tiles.size();
 	return n;
+}
 }

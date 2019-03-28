@@ -1,12 +1,13 @@
 #include <BulletCollision/BroadphaseCollision/btSimpleBroadphase.h>
 
-#include "btInfTypes.h"
+#include "btInf/Types.h"
 
-
-class btInfBroadphase : public btSimpleBroadphase
+namespace btInf
+{
+class Broadphase : public btSimpleBroadphase
 {
 public:
-	btInfBroadphase(const btInf::TileSize tileSize, btInf::TileList& tiles);
+	Broadphase(const btInf::TileSize tileSize, btInf::TileList& tiles);
 
 	void calculateOverlappingPairs(btDispatcher* dispatcher);
 	bool aabbOverlap(
@@ -25,3 +26,4 @@ private:
 
 	btInf::TileList& m_tiles;
 };
+}

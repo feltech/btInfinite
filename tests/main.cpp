@@ -1,13 +1,16 @@
+
 #define CATCH_CONFIG_MAIN
 #include <algorithm>
+#include <vector>
+#include <ostream>
 
 #include "catch.hpp"
 #include <btBulletDynamicsCommon.h>
 
-#include "btInfTypes.h"
-#include "btInfCollisionDispatcher.h"
-#include "btInfRigidBody.h"
-#include "btInfBroadphase.h"
+#include "btInf/Types.h"
+#include "btInf/CollisionDispatcher.h"
+#include "btInf/RigidBody.h"
+#include "btInf/Broadphase.h"
 
 
 std::ostream& operator <<( std::ostream& os, const btVector3& p ) {
@@ -27,9 +30,11 @@ SCENARIO("Sphere-sphere collision")
 	const btScalar tile_size = 10;
 	const btInf::TileIdx grid_size = 10;
 	btInf::TileList tiles{grid_size};
-	auto broadphase = std::make_unique<btInfBroadphase>(tile_size, tiles);
+	auto broadphase = std::make_unique<btInf::Broadphase>(tile_size, tiles);
 	auto collision_config = std::make_unique<btDefaultCollisionConfiguration>();
-	auto dispatcher = std::make_unique<btInfCollisionDispatcher>(collision_config.get(), tile_size);
+	auto dispatcher = std::make_unique<btInf::CollisionDispatcher>(
+		collision_config.get(), tile_size
+	);
 	auto solver = std::make_unique<btSequentialImpulseConstraintSolver>();
 	auto world = std::make_unique<btDiscreteDynamicsWorld>(
 		dispatcher.get(), broadphase.get(), solver.get(), collision_config.get()
@@ -52,7 +57,7 @@ SCENARIO("Sphere-sphere collision")
 			sphere_orientation, offset
 		};
 		sphere_construct.m_restitution = sphere_restitution;
-		auto sphere_body = std::make_unique<btInfRigidBody>(sphere_construct, tile);
+		auto sphere_body = std::make_unique<btInf::RigidBody>(sphere_construct, tile);
 		world->addRigidBody(sphere_body.get());
 		return sphere_body;
 	};
@@ -89,8 +94,8 @@ SCENARIO("Sphere-sphere collision")
 
 	GIVEN("Two spheres in the same tile")
 	{
-		std::unique_ptr<btInfRigidBody> sphere1_body;
-		std::unique_ptr<btInfRigidBody> sphere2_body;
+		std::unique_ptr<btInf::RigidBody> sphere1_body;
+		std::unique_ptr<btInf::RigidBody> sphere2_body;
 
 		auto spheres_info = [&]() {
 			std::stringstream ss;
@@ -151,8 +156,8 @@ SCENARIO("Sphere-sphere collision")
 	}
 	GIVEN("Two spheres in neighbouring tiles")
 	{
-		std::unique_ptr<btInfRigidBody> sphere1_body;
-		std::unique_ptr<btInfRigidBody> sphere2_body;
+		std::unique_ptr<btInf::RigidBody> sphere1_body;
+		std::unique_ptr<btInf::RigidBody> sphere2_body;
 		sphere1_body = create_sphere(btVector3{1,1,0}, btVector3{2, 2, 0});
 		sphere2_body = create_sphere(btVector3{0,0,0}, btVector3{-2, -2, 0});
 
@@ -239,7 +244,7 @@ SCENARIO("Sphere-sphere collision")
 	GIVEN("Two pairs of spheres in distant tiles colliding like Newtons cradle")
 	{
 
-		std::unique_ptr<btInfRigidBody> sphere11_body, sphere12_body, sphere21_body, sphere22_body;
+		std::unique_ptr<btInf::RigidBody> sphere11_body, sphere12_body, sphere21_body, sphere22_body;
 		sphere11_body = create_sphere(btVector3{-2,0,0}, btVector3{-2, 0, 0});
 		sphere12_body = create_sphere(btVector3{-2,0,0}, btVector3{0, 0, 0});
 		sphere21_body = create_sphere(btVector3{2,0,0}, btVector3{2, 0, 0});
@@ -344,8 +349,8 @@ SCENARIO("Sphere-sphere collision")
 			}
 			THEN("chosen reference tile is between the two")
 			{
-				CHECK(sphere11_body->m_refTileCoord == btInfRigidBody::NO_REF);
-				CHECK(sphere21_body->m_refTileCoord == btInfRigidBody::NO_REF);
+				CHECK(sphere11_body->m_refTileCoord == btInf::RigidBody::NO_REF);
+				CHECK(sphere21_body->m_refTileCoord == btInf::RigidBody::NO_REF);
 				CHECK(sphere12_body->m_refTileCoord == btVector3(0, 0, 0));
 				CHECK(sphere22_body->m_refTileCoord == btVector3(0, 0, 0));
 			}
@@ -360,8 +365,8 @@ SCENARIO("Sphere-sphere collision")
 						sphere11_body.get(), sphere12_body.get(), sphere22_body.get()
 					}
 				);
-onions				CHECK(tiles[6] == btInf::TileMemberList{sphere21_body.get()});
-	}
+				CHECK(tiles[6] == btInf::TileMemberList{sphere21_body.get()});
+			}
 		}
 	}
 }

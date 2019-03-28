@@ -1,14 +1,14 @@
 #include <BulletCollision/CollisionDispatch/btCollisionDispatcher.h>
 
-class btInfCollisionConfiguration;
-
+namespace btInf
+{
 /**
  *
  */
-class btInfCollisionDispatcher : public btCollisionDispatcher
+class CollisionDispatcher : public btCollisionDispatcher
 {
 public:
-	btInfCollisionDispatcher (
+	CollisionDispatcher (
 		btCollisionConfiguration* collisionConfiguration, const btScalar tileSize
 	);
 
@@ -20,3 +20,4 @@ public:
 private:
 	const btScalar m_tileSize;
 };
+}

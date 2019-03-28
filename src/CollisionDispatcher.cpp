@@ -1,30 +1,33 @@
 #include <BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h>
-#include <btInfRigidBody.h>
-#include "btInfCollisionDispatcher.h"
 
+#include "btInf/CollisionDispatcher.h"
+#include "btInf/RigidBody.h"
 
-btInfCollisionDispatcher::btInfCollisionDispatcher (
+namespace btInf
+{
+
+CollisionDispatcher::CollisionDispatcher (
 	btCollisionConfiguration* collisionConfiguration, const btScalar tileSize
 ) : btCollisionDispatcher(collisionConfiguration), m_tileSize{tileSize}
 {
-	this->setNearCallback(btInfCollisionDispatcher::defaultNearCallback);
+	this->setNearCallback(CollisionDispatcher::defaultNearCallback);
 }
 
 
-void btInfCollisionDispatcher::defaultNearCallback(
+void CollisionDispatcher::defaultNearCallback(
 	btBroadphasePair& collisionPair, btCollisionDispatcher& dispatcher,
 	const btDispatcherInfo& dispatchInfo
 ) {
-	btInfRigidBody* colObj0 = (btInfRigidBody*)collisionPair.m_pProxy0->m_clientObject;
-	btInfRigidBody* colObj1 = (btInfRigidBody*)collisionPair.m_pProxy1->m_clientObject;
+	RigidBody* colObj0 = (RigidBody*)collisionPair.m_pProxy0->m_clientObject;
+	RigidBody* colObj1 = (RigidBody*)collisionPair.m_pProxy1->m_clientObject;
 
 	if (dispatcher.needsCollision(colObj0,colObj1))
 	{
 		btVector3 refTile;
-		if (colObj0->m_refTileCoord != btInfRigidBody::NO_REF) {
+		if (colObj0->m_refTileCoord != RigidBody::NO_REF) {
 			refTile = colObj0->m_refTileCoord;
 			colObj1->m_refTileCoord = refTile;
-		} else if (colObj1->m_refTileCoord != btInfRigidBody::NO_REF) {
+		} else if (colObj1->m_refTileCoord != RigidBody::NO_REF) {
 			refTile = colObj1->m_refTileCoord;
 			colObj0->m_refTileCoord = refTile;
 		} else {
@@ -32,7 +35,7 @@ void btInfCollisionDispatcher::defaultNearCallback(
 			colObj0->m_refTileCoord = refTile;
 			colObj1->m_refTileCoord = refTile;
 		}
-		const btScalar tileSize = static_cast<btInfCollisionDispatcher&>(dispatcher).m_tileSize;
+		const btScalar tileSize = static_cast<CollisionDispatcher&>(dispatcher).m_tileSize;
 		const btVector3 tileDelta0 = tileSize * (colObj0->m_tileCoord - refTile);
 		const btVector3 tileDelta1 = tileSize * (colObj1->m_tileCoord - refTile);
 
@@ -79,4 +82,5 @@ void btInfCollisionDispatcher::defaultNearCallback(
 		}
 	}
 
+}
 }

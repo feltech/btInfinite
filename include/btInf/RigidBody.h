@@ -3,9 +3,11 @@
 #include <LinearMath/btVector3.h>
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 
-#include "btInfTypes.h"
+#include "btInf/Types.h"
 
-class btInfRigidBody : public btRigidBody
+namespace btInf
+{
+class RigidBody : public btRigidBody
 {
 public:
 	btInf::TileCoord	m_tileCoord;
@@ -16,11 +18,8 @@ public:
 
 public:
 
-	btInfRigidBody(
+	RigidBody(
 		const btRigidBodyConstructionInfo& constructionInfo, const btVector3& tileCoord
 	);
 };
-
-
-
-
+}
